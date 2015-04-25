@@ -3,27 +3,18 @@ package system_yok_exception.crypt_o_cloud;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
@@ -31,12 +22,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
-import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -48,7 +37,6 @@ import javax.swing.table.TableColumn;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreePath;
 
 /**
  * A basic File Browser. Requires 1.6+ for the Desktop & SwingWorker classes,
@@ -72,13 +60,8 @@ class FileBrowser {
 
 	/** Title of the application */
 	public static final String APP_TITLE = "FileBro";
-	/** Used to open/edit/print files. */
-	private Desktop desktop;
 	/** Provides nice icons and names for files. */
 	private FileSystemView fileSystemView;
-
-	/** currently selected File. */
-	private File currentFile;
 
 	/** Main GUI container */
 	private JPanel gui;
@@ -96,11 +79,6 @@ class FileBrowser {
 	private boolean cellSizesSet = false;
 	private int rowIconPadding = 6;
 
-	/* File controls. */
-	private JButton openFile;
-	private JButton printFile;
-	private JButton editFile;
-
 	/* File details. */
 	private JLabel fileName;
 	private JTextField path;
@@ -112,18 +90,12 @@ class FileBrowser {
 	private JRadioButton isDirectory;
 	private JRadioButton isFile;
 
-	/* GUI options/containers for new File/Directory creation. Created lazily. */
-	private JPanel newFilePanel;
-	private JRadioButton newTypeFile;
-	private JTextField name;
-
 	public Container getGui() {
 		if (gui == null) {
 			gui = new JPanel(new BorderLayout(3, 3));
 			gui.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 			fileSystemView = FileSystemView.getFileSystemView();
-			desktop = Desktop.getDesktop();
 
 			JPanel detailView = new JPanel(new BorderLayout(3, 3));
 
@@ -162,7 +134,8 @@ class FileBrowser {
 			};
 
 			// show the file system roots.
-			File[] roots = fileSystemView.getRoots();
+			 fileSystemView.getRoots();
+			 File[] roots = fileSystemView.getFiles(new File("./downloaded"), false);
 			for (File fileSystemRoot : roots) {
 				DefaultMutableTreeNode node = new DefaultMutableTreeNode(
 						fileSystemRoot);
@@ -173,7 +146,6 @@ class FileBrowser {
 						node.add(new DefaultMutableTreeNode(file));
 					}
 				}
-				//
 			}
 
 			tree = new JTree(treeModel);
@@ -225,74 +197,6 @@ class FileBrowser {
 			flags.add(isFile);
 			fileDetailsValues.add(flags);
 
-			JToolBar toolBar = new JToolBar();
-			// mnemonics stop working in a floated toolbar
-			toolBar.setFloatable(false);
-
-			JButton locateFile = new JButton("Locate");
-			locateFile.setMnemonic('l');
-
-			locateFile.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ae) {
-					try {
-						System.out.println("Locate: "
-								+ currentFile.getParentFile());
-						desktop.open(currentFile.getParentFile());
-					} catch (Throwable t) {
-						showThrowable(t);
-					}
-					gui.repaint();
-				}
-			});
-			toolBar.add(locateFile);
-
-			openFile = new JButton("Open");
-			openFile.setMnemonic('o');
-
-			openFile.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ae) {
-					try {
-						System.out.println("Open: " + currentFile);
-						desktop.open(currentFile);
-					} catch (Throwable t) {
-						showThrowable(t);
-					}
-					gui.repaint();
-				}
-			});
-			toolBar.add(openFile);
-
-			editFile = new JButton("Edit");
-			editFile.setMnemonic('e');
-			editFile.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ae) {
-					try {
-						desktop.edit(currentFile);
-					} catch (Throwable t) {
-						showThrowable(t);
-					}
-				}
-			});
-			toolBar.add(editFile);
-
-			printFile = new JButton("Print");
-			printFile.setMnemonic('p');
-			printFile.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent ae) {
-					try {
-						desktop.print(currentFile);
-					} catch (Throwable t) {
-						showThrowable(t);
-					}
-				}
-			});
-			toolBar.add(printFile);
-
-			// Check the actions are supported on this platform!
-			openFile.setEnabled(desktop.isSupported(Desktop.Action.OPEN));
-			editFile.setEnabled(desktop.isSupported(Desktop.Action.EDIT));
-			printFile.setEnabled(desktop.isSupported(Desktop.Action.PRINT));
-
 			flags.add(new JLabel("::  Flags"));
 			readable = new JCheckBox("Read  ");
 			readable.setMnemonic('a');
@@ -318,14 +222,14 @@ class FileBrowser {
 
 			JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
-			fileView.add(toolBar, BorderLayout.NORTH);
-			fileView.add(fileMainDetails, BorderLayout.CENTER);
+			// fileView.add(fileMainDetails, BorderLayout.CENTER);
 
 			detailView.add(fileView, BorderLayout.SOUTH);
 
 			JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
 					treeScroll, detailView);
 			gui.add(splitPane, BorderLayout.CENTER);
+			// gui.add(detailView);
 
 			JPanel simpleOutput = new JPanel(new BorderLayout(3, 3));
 			progressBar = new JProgressBar();
@@ -341,33 +245,6 @@ class FileBrowser {
 	public void showRootFile() {
 		// ensure the main files are displayed
 		tree.setSelectionInterval(0, 0);
-	}
-
-	private TreePath findTreePath(File find) {
-		for (int ii = 0; ii < tree.getRowCount(); ii++) {
-			TreePath treePath = tree.getPathForRow(ii);
-			Object object = treePath.getLastPathComponent();
-			DefaultMutableTreeNode node = (DefaultMutableTreeNode) object;
-			File nodeFile = (File) node.getUserObject();
-
-			if (nodeFile == find) {
-				return treePath;
-			}
-		}
-		// not found!
-		return null;
-	}
-
-	private void showErrorMessage(String errorMessage, String errorTitle) {
-		JOptionPane.showMessageDialog(gui, errorMessage, errorTitle,
-				JOptionPane.ERROR_MESSAGE);
-	}
-
-	private void showThrowable(Throwable t) {
-		t.printStackTrace();
-		JOptionPane.showMessageDialog(gui, t.toString(), t.getMessage(),
-				JOptionPane.ERROR_MESSAGE);
-		gui.repaint();
 	}
 
 	/** Update the table on the EDT */
@@ -393,11 +270,6 @@ class FileBrowser {
 					setColumnWidth(3, 60);
 					table.getColumnModel().getColumn(3).setMaxWidth(120);
 					setColumnWidth(4, -1);
-					setColumnWidth(5, -1);
-					setColumnWidth(6, -1);
-					setColumnWidth(7, -1);
-					setColumnWidth(8, -1);
-					setColumnWidth(9, -1);
 
 					cellSizesSet = true;
 				}
@@ -465,7 +337,6 @@ class FileBrowser {
 
 	/** Update the File details view with the details of this File. */
 	private void setFileDetails(File file) {
-		currentFile = file;
 		Icon icon = fileSystemView.getSystemIcon(file);
 		fileName.setIcon(icon);
 		fileName.setText(fileSystemView.getSystemDisplayName(file));
@@ -487,53 +358,19 @@ class FileBrowser {
 
 		gui.repaint();
 	}
-
-	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					// Significantly improves the look of the output in
-					// terms of the file names returned by FileSystemView!
-					UIManager.setLookAndFeel(UIManager
-							.getSystemLookAndFeelClassName());
-				} catch (Exception weTried) {
-				}
-				JFrame f = new JFrame(APP_TITLE);
-				f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-				FileBrowser FileBrowser = new FileBrowser();
-				f.setContentPane(FileBrowser.getGui());
-
-				try {
-					URL urlBig = FileBrowser.getClass().getResource(
-							"fb-icon-32x32.png");
-					URL urlSmall = FileBrowser.getClass().getResource(
-							"fb-icon-16x16.png");
-					ArrayList<Image> images = new ArrayList<Image>();
-					images.add(ImageIO.read(urlBig));
-					images.add(ImageIO.read(urlSmall));
-					f.setIconImages(images);
-				} catch (Exception weTried) {
-				}
-
-				f.pack();
-				f.setLocationByPlatform(true);
-				f.setMinimumSize(f.getSize());
-				f.setVisible(true);
-
-				FileBrowser.showRootFile();
-			}
-		});
-	}
 }
 
 /** A TableModel to hold File[]. */
 class FileTableModel extends AbstractTableModel {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private File[] files;
 	private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
 	private String[] columns = { "Icon", "File", "Path/name", "Size",
-			"Last Modified", "R", "W", "E", "D", "F", };
+			"Last Modified" };
 
 	FileTableModel() {
 		this(new File[0]);
@@ -556,16 +393,6 @@ class FileTableModel extends AbstractTableModel {
 			return file.length();
 		case 4:
 			return file.lastModified();
-		case 5:
-			return file.canRead();
-		case 6:
-			return file.canWrite();
-		case 7:
-			return file.canExecute();
-		case 8:
-			return file.isDirectory();
-		case 9:
-			return file.isFile();
 		default:
 			System.err.println("Logic Error");
 		}
@@ -584,12 +411,6 @@ class FileTableModel extends AbstractTableModel {
 			return Long.class;
 		case 4:
 			return Date.class;
-		case 5:
-		case 6:
-		case 7:
-		case 8:
-		case 9:
-			return Boolean.class;
 		}
 		return String.class;
 	}
@@ -614,6 +435,11 @@ class FileTableModel extends AbstractTableModel {
 
 /** A TreeCellRenderer for a File. */
 class FileTreeCellRenderer extends DefaultTreeCellRenderer {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	private FileSystemView fileSystemView;
 
