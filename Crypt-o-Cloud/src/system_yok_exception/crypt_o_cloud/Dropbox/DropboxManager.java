@@ -44,36 +44,35 @@ public class DropboxManager implements ICloudManager {
 	private final String APP_SECRET = "jcmcmmefr6lajuv";
 	private final String CLOUD_NAME = "Dropbox";
 	private final String TOKEN_PATH = "\\dbxtoken";
-	
+
 	private String accessToken;
 	private DbxRequestConfig config;
 	private DbxClient client;
-	
+
 	public DropboxManager() throws Exception {
 		config = new DbxRequestConfig("CryptoCloud/1.0", Locale.getDefault()
 				.toString());
-		
-			try {
-				BufferedReader textBufferedReader = new BufferedReader(new FileReader(new File(TOKEN_PATH)));
-				accessToken = textBufferedReader.readLine();
-				if(accessToken == null) 
-					authenticate();
-				
-				client = new DbxClient(config, accessToken);
-				listDir("/");
-				textBufferedReader.close();
-				
-			} catch (DbxException.InvalidAccessToken e) {
-				
+
+		try {
+			BufferedReader textBufferedReader = new BufferedReader(
+					new FileReader(new File(TOKEN_PATH)));
+			accessToken = textBufferedReader.readLine();
+			if (accessToken == null) {
 				authenticate();
 			}
-			catch(FileNotFoundException e)
-			{
-				authenticate();
-			}
-			
-			
-		
+
+			client = new DbxClient(config, accessToken);
+			listDir("/");
+			textBufferedReader.close();
+
+		} catch (DbxException.InvalidAccessToken e) {
+			authenticate();
+		} catch (FileNotFoundException e) {
+			authenticate();
+		} catch (NoSuchFileException e) {
+			authenticate();
+		}
+
 	}
 
 	private void authenticate() throws IOException, DbxException {
@@ -118,38 +117,51 @@ public class DropboxManager implements ICloudManager {
 
 		DbxAuthFinish authFinish = webAuth.finish(code);
 		accessToken = authFinish.accessToken;
-		
+
 		PrintWriter writer = new PrintWriter(TOKEN_PATH);
-		
+
 		writer.print(accessToken);
-		
+
 		writer.close();
 	}
 
 	@Override
-	public File uploadResource(File sourceFile, String destinationPath) throws Exception 
-	{
-		
-			if (sourceFile.isFile()) {
-				FileInputStream inputStream = new FileInputStream(sourceFile);
-			
-				DbxEntry.File uploadedFile = client.uploadFile(destinationPath+sourceFile.getName(),
-					DbxWriteMode.add(), sourceFile.length(), inputStream);
-			
-				try {
-					inputStream.close();
-				} catch (IOException e) {
-				}
+	public File uploadResource(final File sourceFile,final String destinationPath)
+			throws Exception {
+
+		if (sourceFile.isFile()) {
+			FileInputStream inputStream = new FileInputStream(sourceFile);
+
+			DbxEntry.File uploadedFile = client.uploadFile(destinationPath
+					+ "/" + sourceFile.getName(), DbxWriteMode.add(),
+					sourceFile.length(), inputStream);
+
+			try {
+				inputStream.close();
+			} catch (IOException e) {
 			}
-			else
-			{
-				File[] children = sourceFile.listFiles();
+		} else {
+			
+			new Thread(){
 				
-				for(File node : children)
-				{
-					uploadResource(node, destinationPath + "/" + sourceFile);
-				}
-			}
+			    public void run(){
+			      File[] children = sourceFile.listFiles();
+
+					DbxEntry.Folder folder = new DbxEntry.Folder(destinationPath, null, true);
+					
+					//TODO: Exceptions
+					for (File node : children) {
+						try {
+							uploadResource(node, destinationPath + "/" + sourceFile.getName());
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+			    }
+			  }.start();
+			
+		}
 
 		return sourceFile;
 	}
@@ -158,34 +170,40 @@ public class DropboxManager implements ICloudManager {
 	public File downloadResource(String resName, File downloadedRes)
 			throws DbxException, IOException {
 
-		FileOutputStream outputStream = new FileOutputStream(downloadedRes);
-		client.getFile(resName, null, outputStream);
-
+		//ArrayList<Pair<String, String>> folderContents = listDir(resname);
+		
+		//if()
+		{
+			FileOutputStream outputStream = new FileOutputStream(downloadedRes);
+			client.getFile(resName, null, outputStream);
+		}
+		//else
+		{
+			
+		}
 		return downloadedRes;
 	}
 
 	@Override
-	public ArrayList<Pair<String, String>> listDir(String dirPath) throws DbxException {
-		
+	public ArrayList<Pair<String, String>> listDir(String dirPath)
+			throws DbxException {
+
 		WithChildren listing = client.getMetadataWithChildren(dirPath);
 		int size = listing.children.size();
-		ArrayList<Pair<String, String>> children = new ArrayList<Pair<String,String>>();
+		ArrayList<Pair<String, String>> children = new ArrayList<Pair<String, String>>();
 
 		for (int i = 0; i < size; i++) {
-			
+
 			Pair<String, String> pair = new Pair<>();
-			
+
 			pair.setFirst(listing.children.get(i).name);
-			
-			if(listing.children.get(i).isFile())
-			{
+
+			if (listing.children.get(i).isFile()) {
 				pair.setSecond(TYPE_FILE);
-			}
-			else
-			{
+			} else {
 				pair.setSecond(TYPE_FOLDER);
 			}
-			
+
 			children.add(pair);
 		}
 
