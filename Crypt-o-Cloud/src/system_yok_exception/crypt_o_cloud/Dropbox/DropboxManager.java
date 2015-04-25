@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import javax.swing.JEditorPane;
@@ -35,6 +36,7 @@ import com.dropbox.core.DbxWriteMode;
 import com.fasterxml.jackson.core.util.TextBuffer;
 
 import system_yok_exception.crypt_o_cloud.ICloudManager;
+import system_yok_exception.crypt_o_cloud.Pair;
 
 public class DropboxManager implements ICloudManager {
 
@@ -42,7 +44,7 @@ public class DropboxManager implements ICloudManager {
 	private final String APP_SECRET = "jcmcmmefr6lajuv";
 	private final String CLOUD_NAME = "Dropbox";
 	private final String TOKEN_PATH = "D:\\dbxtoken";
-
+	
 	private String accessToken;
 	private DbxRequestConfig config;
 	private DbxClient client;
@@ -154,21 +156,30 @@ public class DropboxManager implements ICloudManager {
 	}
 
 	@Override
-	public String[] listDir(String dirPath) throws DbxException {
-
+	public ArrayList<Pair<String, String>> listDir(String dirPath) throws DbxException {
+		
 		WithChildren listing = client.getMetadataWithChildren(dirPath);
 		int size = listing.children.size();
-		String[] children = new String[size];
+		ArrayList<Pair<String, String>> children = new ArrayList<Pair<String,String>>();
 
 		for (int i = 0; i < size; i++) {
-			children[i] = listing.children.get(i).name;
+			
+			Pair<String, String> pair = new Pair<>();
+			
+			pair.setFirst(listing.children.get(i).name);
+			
+			if(listing.children.get(i).isFile())
+			{
+				pair.setSecond(TYPE_FILE);
+			}
+			else
+			{
+				pair.setSecond(TYPE_FOLDER);
+			}
+			
+			children.add(pair);
 		}
 
-		// DbxEntry.WithChildren listing = client.getMetadataWithChildren("/");
-		// System.out.println("Files in the root path:");
-		// for (DbxEntry child : listing.children) {
-		// System.out.println("    " + child.name + ": " + child.toString());
-		// }
 
 		return children;
 	}
