@@ -1,11 +1,9 @@
 package system_yok_exception.utils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import javax.xml.bind.DatatypeConverter;
@@ -14,9 +12,9 @@ public class FileKeyService implements IKeyService {
 
 	@Override
 	public byte[] getDefaultKey() {
-		String keyString = "C0BAE23DF8B51807B3E17D21925FADF273A70181E1D81B8EDE6C76A5C1F1716E";
-		// byte[] keyValue = DatatypeConverter.parseHexBinary(keyString);
-		byte[] keyValue = keyString.getBytes();
+		//String keyString = "C0BAE23DF8B51807B3E17D21925FADF273A70181E1D81B8EDE6C76A5C1F1716E";
+		String keyString = "C0BAE23DF8B51807B3E17D21925FADF2";
+		byte[] keyValue = DatatypeConverter.parseHexBinary(keyString);
 		return keyValue;
 	}
 
