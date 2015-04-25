@@ -43,7 +43,7 @@ public class DropboxManager implements ICloudManager {
 	private final String APP_KEY = "c6gamqdwze5e08g";
 	private final String APP_SECRET = "jcmcmmefr6lajuv";
 	private final String CLOUD_NAME = "Dropbox";
-	private final String TOKEN_PATH = "D:\\dbxtoken";
+	private final String TOKEN_PATH = "\\dbxtoken";
 	
 	private String accessToken;
 	private DbxRequestConfig config;
@@ -53,26 +53,26 @@ public class DropboxManager implements ICloudManager {
 		config = new DbxRequestConfig("CryptoCloud/1.0", Locale.getDefault()
 				.toString());
 		
-				BufferedReader textBufferedReader = new BufferedReader(new FileReader(new File(TOKEN_PATH)));
-		
 			try {
-				
+				BufferedReader textBufferedReader = new BufferedReader(new FileReader(new File(TOKEN_PATH)));
 				accessToken = textBufferedReader.readLine();
 				if(accessToken == null) 
 					authenticate();
 				
 				client = new DbxClient(config, accessToken);
 				listDir("/");
+				textBufferedReader.close();
 				
 			} catch (DbxException.InvalidAccessToken e) {
 				
 				authenticate();
 			}
-			catch(NoSuchFileException e)
+			catch(FileNotFoundException e)
 			{
 				authenticate();
 			}
-		
+			
+			
 		
 	}
 
@@ -129,6 +129,7 @@ public class DropboxManager implements ICloudManager {
 	@Override
 	public File uploadResource(File sourceFile, String destinationPath) throws Exception 
 	{
+		
 			if (sourceFile.isFile()) {
 				FileInputStream inputStream = new FileInputStream(sourceFile);
 			
@@ -140,8 +141,16 @@ public class DropboxManager implements ICloudManager {
 				} catch (IOException e) {
 				}
 			}
+			else
+			{
+				File[] children = sourceFile.listFiles();
+				
+				for(File node : children)
+				{
+					uploadResource(node, destinationPath + "/" + sourceFile);
+				}
+			}
 
-		
 		return sourceFile;
 	}
 
@@ -179,7 +188,6 @@ public class DropboxManager implements ICloudManager {
 			
 			children.add(pair);
 		}
-
 
 		return children;
 	}
