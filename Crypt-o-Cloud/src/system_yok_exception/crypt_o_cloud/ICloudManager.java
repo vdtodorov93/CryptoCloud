@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 public interface ICloudManager {
 	public void uploadResource(Path path) throws Exception;
-	public void downloadResource(String filename, Path path);
+	public void downloadResource(String resName, Path path);
 	public String[] listDir (String dirName);
 	public String getAccountName() throws Exception;
 	// public void authenticate() ?
