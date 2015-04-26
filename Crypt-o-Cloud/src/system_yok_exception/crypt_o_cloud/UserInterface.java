@@ -24,7 +24,7 @@ import system_yok_exception.crypt_o_cloud.Dropbox.DropboxManager;
 
 public class UserInterface {
 	private static final String ACCOUNTS_FILE_NAME = "accounts.csv";
-	public static final String ROOT_FOLDER_IN_CLOUD = "/crypted/";
+	public static final String ROOT_FOLDER_IN_CLOUD = "/crypted";
 	private ICloudManager cloudManager;
 
 	private final CloudFileBrowser cloudBrowser = new CloudFileBrowser();
@@ -175,9 +175,10 @@ public class UserInterface {
 		if (cloudManager == null || cloudBrowser.getSelectedFile() == null)
 			return;
 		try {
-			cloudManager.downloadResource(cloudBrowser.getCurrentPath()
+			cloudManager.downloadResource(cloudBrowser.getCurrentPath() + "/"
 					+ cloudBrowser.getSelectedFile().getFirst(),
 					localBrowser.getCurrentFolder());
+			localBrowser.updateCurrent();
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null,
 					"Problem when downloading resours", "Download Error",
@@ -192,6 +193,7 @@ public class UserInterface {
 		try {
 			cloudManager.uploadResource(localBrowser.getSelectedFile(),
 					cloudBrowser.getCurrentPath());
+			cloudBrowser.updateCurrent();
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null,
 					"Problem when uploading resours", "Upload Error",

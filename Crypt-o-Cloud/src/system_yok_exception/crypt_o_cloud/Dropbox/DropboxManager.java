@@ -163,12 +163,17 @@ public class DropboxManager implements ICloudManager {
 	public File downloadResource(String resName, File downloadedRes)
 			throws DbxException, IOException {
 
-		DbxEntry.Folder node = new DbxEntry.Folder(resName, null, true);
 		
-		if(node.isFile())
+		WithChildren listing = client.getMetadataWithChildren(resName);
+		
+		
+		
+		//DbxEntry.Folder node = new DbxEntry.Folder(resName, null, true);
+		
+		if(listing != null)
 		{
 			(new File(resName)).mkdirs();
-			FileOutputStream outputStream = new FileOutputStream(downloadedRes);
+			FileOutputStream outputStream = new FileOutputStream(downloadedRes + resName.substring(resName.lastIndexOf('/')));
 			client.getFile(resName, null, outputStream);
 		}
 		else

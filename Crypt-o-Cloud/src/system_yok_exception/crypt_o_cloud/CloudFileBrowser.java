@@ -82,18 +82,20 @@ public class CloudFileBrowser extends AbstractTableModel {
 			setFiles(previous.pop());
 			currentPath = currentPath
 					.substring(0, currentPath.lastIndexOf('/'));
-			currentPath = currentPath
-					.substring(0, currentPath.lastIndexOf('/')) + "/";
 		} else if (files.get(previous.isEmpty() ? row : --row).getSecond()
 				.equals(ICloudManager.TYPE_FOLDER)) {
 			previous.push(files);
-			currentPath += files.get(row).getFirst() + "/";
+			currentPath += "/" + files.get(row).getFirst();
 			setFiles(cloudManager.listDir(currentPath));
 		}
 	}
 
 	public void singleClickedRow(int row) {
-		selectedFile = previous.isEmpty() ? files.get(row) : files.get(row - 1);
+		if (row == 0 && !previous.isEmpty())
+			selectedFile = null;
+		else
+			selectedFile = previous.isEmpty() ? files.get(row) : files
+					.get(row - 1);
 	}
 
 	public Pair<String, String> getSelectedFile() {
@@ -102,5 +104,9 @@ public class CloudFileBrowser extends AbstractTableModel {
 
 	public String getCurrentPath() {
 		return currentPath;
+	}
+
+	public void updateCurrent() throws Exception {
+		setFiles(cloudManager.listDir(currentPath));
 	}
 }

@@ -108,7 +108,11 @@ class LocalFileBrowser extends AbstractTableModel {
 	}
 
 	public void singleClickedRow(int row) {
-		selectedFile = previous.isEmpty() ? files.get(row) : files.get(row - 1);
+		if (row == 0) {
+			selectedFile = null;
+		} else
+			selectedFile = previous.isEmpty() ? files.get(row) : files
+					.get(row - 1);
 	}
 
 	public File getSelectedFile() {
@@ -117,5 +121,21 @@ class LocalFileBrowser extends AbstractTableModel {
 
 	public File getCurrentFolder() {
 		return previousFolders.peek();
+	}
+
+	public void updateCurrent() {
+		if (previousFolders.isEmpty()) {
+			File roots[] = fileSystemView.getRoots();
+			for (File root : roots) {
+				File[] filesInRoot = fileSystemView.getFiles(root, true);
+				for (File file : filesInRoot)
+					files.add(file);
+			}
+			fireTableDataChanged();
+		} else {
+			setFiles(Arrays.asList(fileSystemView.getFiles(
+					previousFolders.peek(), true)));
+		}
+
 	}
 }
