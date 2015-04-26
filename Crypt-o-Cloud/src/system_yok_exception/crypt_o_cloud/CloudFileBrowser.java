@@ -11,16 +11,19 @@ public class CloudFileBrowser extends AbstractTableModel {
 	private static final long serialVersionUID = 1L;
 
 	private List<Pair<String, String>> files = new ArrayList<>();
+	private Pair<String, String> selectedFile;
 	private Stack<List<Pair<String, String>>> previous = new Stack<>();
 
 	private ICloudManager cloudManager;
 	private String currentPath;
 	private String[] columns = { "Icon", "File" };
 
-	public CloudFileBrowser(ICloudManager cloudManager) throws Exception {
+	public void loadRoot(ICloudManager cloudManager) throws Exception {
 		this.cloudManager = cloudManager;
-		files = cloudManager.listDir(UserInterface.ROOT_FOLDER_IN_CLOUD);
-		currentPath = UserInterface.ROOT_FOLDER_IN_CLOUD;
+		if (cloudManager != null) {
+			currentPath = UserInterface.ROOT_FOLDER_IN_CLOUD;
+			setFiles(cloudManager.listDir(currentPath));
+		}
 	}
 
 	private ImageIcon loadFolderFileIcon(Pair<String, String> file) {
@@ -87,5 +90,17 @@ public class CloudFileBrowser extends AbstractTableModel {
 			currentPath += files.get(row).getFirst() + "/";
 			setFiles(cloudManager.listDir(currentPath));
 		}
+	}
+
+	public void singleClickedRow(int row) {
+		selectedFile = previous.isEmpty() ? files.get(row) : files.get(row - 1);
+	}
+
+	public Pair<String, String> getSelectedFile() {
+		return selectedFile;
+	}
+
+	public String getCurrentPath() {
+		return currentPath;
 	}
 }

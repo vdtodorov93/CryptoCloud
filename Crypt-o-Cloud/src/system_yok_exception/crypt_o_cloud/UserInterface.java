@@ -6,6 +6,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -17,22 +20,30 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
-import system_yok_exception.crypt_o_cloud.Account.Cloud;
 import system_yok_exception.crypt_o_cloud.Dropbox.DropboxManager;
 
 public class UserInterface {
-	private static final Account DUMMY_ACCOUNT = new Account("hackfmi_dropbox",
-			Cloud.DROPBOX);
+	private static final String ACCOUNTS_FILE_NAME = "accounts.csv";
 	public static final String ROOT_FOLDER_IN_CLOUD = "/crypted/";
 	private ICloudManager cloudManager;
 
-	public UserInterface() {
+	private final CloudFileBrowser cloudBrowser = new CloudFileBrowser();
+	private final LocalFileBrowser localBrowser = new LocalFileBrowser();
+
+	private Account[] readAccountsFromCsvFile() {
+		Account noAccount = new Account("-- No Logged Account --", null);
 		try {
-			cloudManager = new DropboxManager();
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(null, "Problem with dropboxManager",
-					"Error: DropboxManager", JOptionPane.ERROR_MESSAGE);
-			e.printStackTrace();
+			List<List<String>> readed = CSV.readFile(new File(
+					ACCOUNTS_FILE_NAME));
+			Account[] accounts = new Account[readed.size() + 1];
+			accounts[0] = noAccount;
+			for (int i = 0; i < readed.size(); ++i) {
+				accounts[i + 1] = new Account(readed.get(i).get(0), readed.get(
+						i).get(1));
+			}
+			return accounts;
+		} catch (IOException e) {
+			return new Account[] { noAccount };
 		}
 	}
 
@@ -48,7 +59,7 @@ public class UserInterface {
 		userInfoPanel.add(accountNameLabel);
 
 		JComboBox<Account> accountsCombobox = new JComboBox<Account>(
-				new Account[] { new Account(), DUMMY_ACCOUNT });
+				readAccountsFromCsvFile());
 		accountsCombobox.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -64,12 +75,6 @@ public class UserInterface {
 		uploadDownloadPanel.setLayout(new BoxLayout(uploadDownloadPanel,
 				BoxLayout.X_AXIS));
 
-		JButton uploadButton = new JButton("Upload");
-		uploadDownloadPanel.add(uploadButton);
-
-		JButton downloadButton = new JButton("Download");
-		uploadDownloadPanel.add(downloadButton);
-
 		upperPanel.add(userInfoPanel);
 		upperPanel.add(uploadDownloadPanel);
 
@@ -77,57 +82,122 @@ public class UserInterface {
 	}
 
 	private void createLowerPanelFolderStructure(JPanel panel) {
-		final LocalFileBrowser localBrowser = new LocalFileBrowser();
+		JPanel lowerPanel = new JPanel();
+		lowerPanel.setLayout(new BoxLayout(lowerPanel, BoxLayout.X_AXIS));
+
 		JTable localTable = new JTable(localBrowser);
 		localTable.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					Point p = e.getPoint();
-					JTable table = (JTable) e.getSource();
-					int row = table.rowAtPoint(p);
+				Point p = e.getPoint();
+				JTable table = (JTable) e.getSource();
+				int row = table.rowAtPoint(p);
+				if (e.getClickCount() == 2)
 					localBrowser.doubleClickedRow(row);
-				}
+				else if (e.getClickCount() == 1)
+					localBrowser.singleClickedRow(row);
+
 			}
 		});
 
 		try {
-			final CloudFileBrowser cloudBrowser = new CloudFileBrowser(
-					cloudManager);
 			JTable cloudTable = new JTable(cloudBrowser);
 			cloudTable.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mousePressed(MouseEvent e) {
-					if (e.getClickCount() == 2) {
-						Point p = e.getPoint();
-						JTable table = (JTable) e.getSource();
-						int row = table.rowAtPoint(p);
-						try {
+					Point p = e.getPoint();
+					JTable table = (JTable) e.getSource();
+					int row = table.rowAtPoint(p);
+					try {
+						if (e.getClickCount() == 2)
 							cloudBrowser.doubleClickedRow(row);
-						} catch (Exception ex) {
-							JOptionPane.showMessageDialog(null,
-									"Problem with dropboxManager",
-									"Error: DropboxManager",
-									JOptionPane.ERROR_MESSAGE);
-							ex.printStackTrace();
-						}
+						else if (e.getClickCount() == 1)
+							cloudBrowser.singleClickedRow(row);
+					} catch (Exception ex) {
+						JOptionPane.showMessageDialog(null,
+								"Problem with dropboxManager",
+								"Error: DropboxManager",
+								JOptionPane.ERROR_MESSAGE);
+						ex.printStackTrace();
 					}
+
 				}
 			});
-			JScrollPane scroll = new JScrollPane(cloudTable);
-			panel.add(scroll);
+
+			JScrollPane scrollLocal = new JScrollPane(localTable);
+			lowerPanel.add(scrollLocal);
+
+			JPanel buttonPanel = new JPanel();
+			buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+
+			JButton uploadButton = new JButton(">");
+			uploadButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					onUpload();
+				}
+			});
+			buttonPanel.add(uploadButton);
+
+			JButton downloadButton = new JButton("<");
+			downloadButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					onDownload();
+				}
+			});
+			buttonPanel.add(downloadButton);
+			lowerPanel.add(buttonPanel);
+
+			JScrollPane scrollCloud = new JScrollPane(cloudTable);
+			lowerPanel.add(scrollCloud);
+
+			panel.add(lowerPanel);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null, "Problem with dropboxManager",
 					"Error: DropboxManager", JOptionPane.ERROR_MESSAGE);
 			e.printStackTrace();
 		}
-
-		JScrollPane scroll = new JScrollPane(localTable);
-		panel.add(scroll);
 	}
 
 	private void onAccountChoosen() {
-		// TODO
+		try {
+			cloudManager = new DropboxManager();
+			cloudBrowser.loadRoot(cloudManager);
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null, "Problem with dropboxManager",
+					"Error: DropboxManager", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		}
+	}
+
+	private void onDownload() {
+		if (cloudManager == null || cloudBrowser.getSelectedFile() == null)
+			return;
+		try {
+			cloudManager.downloadResource(cloudBrowser.getCurrentPath()
+					+ cloudBrowser.getSelectedFile().getFirst(),
+					localBrowser.getCurrentFolder());
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null,
+					"Problem when downloading resours", "Download Error",
+					JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		}
+	}
+
+	private void onUpload() {
+		if (cloudManager == null || localBrowser.getSelectedFile() == null)
+			return;
+		try {
+			cloudManager.uploadResource(localBrowser.getSelectedFile(),
+					cloudBrowser.getCurrentPath());
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null,
+					"Problem when uploading resours", "Upload Error",
+					JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		}
 	}
 
 	private JPanel getJPanel() {
@@ -151,5 +221,6 @@ public class UserInterface {
 
 	public static void main(String args[]) {
 		createAndShowGUI();
+		// TODO Запаметяването на акаунтите при изход
 	}
 }

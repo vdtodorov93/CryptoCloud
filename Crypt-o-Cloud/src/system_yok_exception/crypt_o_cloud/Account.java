@@ -1,24 +1,21 @@
 package system_yok_exception.crypt_o_cloud;
 
 public class Account {
-	public enum Cloud {
-		DROPBOX;
-	}
 
 	private String name;
-	private Cloud cloud;
+	private String cloud;
 
 	public Account() {
 	}
 
-	public Account(String name, Cloud cloud) {
+	public Account(String name, String cloud) {
 		this.name = name;
 		this.cloud = cloud;
 	}
 
 	@Override
 	public String toString() {
-		return name == null ? "" : name + "(" + cloud.toString() + ")";
+		return name + (cloud == null ? "" : "(" + cloud + ")");
 	}
 
 	public String getName() {
@@ -29,11 +26,11 @@ public class Account {
 		this.name = name;
 	}
 
-	public Cloud getCloud() {
+	public String getCloud() {
 		return cloud;
 	}
 
-	public void setCloud(Cloud cloud) {
+	public void setCloud(String cloud) {
 		this.cloud = cloud;
 	}
 }

@@ -15,7 +15,9 @@ class LocalFileBrowser extends AbstractTableModel {
 	private static final long serialVersionUID = 1L;
 
 	private List<File> files = new ArrayList<>();
+	private File selectedFile;
 	private Stack<List<File>> previous = new Stack<>();
+	private Stack<File> previousFolders = new Stack<>();
 
 	private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
 	private String[] columns = { "Icon", "File", "Path/name", "Size",
@@ -96,10 +98,24 @@ class LocalFileBrowser extends AbstractTableModel {
 	public void doubleClickedRow(int row) {
 		if (!previous.isEmpty() && row == 0) {
 			setFiles(previous.pop());
+			previousFolders.pop();
 		} else if (files.get(previous.isEmpty() ? row : --row).isDirectory()) {
 			previous.push(files);
+			previousFolders.push(files.get(row));
 			setFiles(Arrays
 					.asList(fileSystemView.getFiles(files.get(row), true)));
 		}
+	}
+
+	public void singleClickedRow(int row) {
+		selectedFile = previous.isEmpty() ? files.get(row) : files.get(row - 1);
+	}
+
+	public File getSelectedFile() {
+		return selectedFile;
+	}
+
+	public File getCurrentFolder() {
+		return previousFolders.peek();
 	}
 }
