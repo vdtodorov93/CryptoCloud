@@ -1,21 +1,14 @@
 package system_yok_exception.utils;
 
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 import sun.misc.*;
-import org.apache.commons.codec.binary.Base64;
 
 public class Aes256Encryptor implements IEncryptor {
 	//private static final String algName = "AES/ECB/PKCS5PADDING";
 	private static final String algName = "AES";
-	private static final String encoding = "UTF-8";
 
 	@Override
 	public byte[] encrypt(byte[] data, byte[] aesKey) {
@@ -47,31 +40,6 @@ public class Aes256Encryptor implements IEncryptor {
 		return decValue;
 	}
 
-//	@Override
-//	public String encrypt(String data, byte[] key) {
-//		// byte[] bytes = data.getBytes();
-//		// System.out.println(bytes.length);
-//		// return encrypt(bytes, key).toString();
-//		byte[] message = data.getBytes();
-//		
-//		byte[] enc = encrypt(message, key);
-//		return Base64.encodeBase64(enc).toString();
-//		//return enc.toString();
-////		String encoded = DatatypeConverter.printBase64Binary(message);
-////		byte[] decoded = DatatypeConverter.parseBase64Binary(encoded);
-//
-//		//
-//	}
-//
-//	@Override
-//	public String decrypt(String data, byte[] key) {
-//		byte[] bytes = data.getBytes();
-//		System.out.println(bytes.length);
-//		byte[] decoded = Base64.decodeBase64(bytes);
-//		System.out.println(decoded.length);
-//		return decrypt(decoded, key).toString();
-//	}
-	
 	public String encrypt(String Data, byte[] aesKey) {
         Key key = generateKey(aesKey);
         Cipher c;

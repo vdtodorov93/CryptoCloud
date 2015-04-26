@@ -2,9 +2,12 @@ package system_yok_exception;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
+
 import javax.xml.bind.DatatypeConverter;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import system_yok_exception.utils.FileKeyService;
@@ -22,14 +25,7 @@ public class FileKeyServiceTest {
 	public void getDefaultKeyTest() {
 		String key = "C0BAE23DF8B51807B3E17D21925FADF2";		
 		byte[] serviceKey = keyService.getDefaultKey();
-		
-//		for (Byte b : serviceKey) {
-//			System.out.print(b);
-//			System.out.print(' ');
-//		}
-//		System.out.println();
-//		System.out.println(serviceKey.length);
-		
+
 		assertArrayEquals(DatatypeConverter.parseHexBinary(key), serviceKey);
 	}
 
@@ -41,6 +37,16 @@ public class FileKeyServiceTest {
 		byte[] readKey = keyService.getKey(keyName);
 		assertArrayEquals(key, readKey);
 		keyService.deleteKey(keyName);
+	}
+	
+	@Test
+	public void getKeysTest() {
+		keyService.generateKey("BATENCE");
+		keyService.generateKey("GAZ");
+		List<String> result = keyService.getKeys();
+		for(String key: result) {
+			System.out.println(key);
+		}
 	}
 
 }

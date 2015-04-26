@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import system_yok_exception.utils.Aes256Encryptor;
@@ -28,17 +29,35 @@ public class CryptUtilTest {
 		pw.write(hardcodedString);
 		pw.close();
 	}
-	
+
 	@Test
-	public void test() throws FileNotFoundException {
+	public void testEncryptDecryptFile() throws FileNotFoundException {
 		CryptUtil cr = new CryptUtil(keyServ.getDefaultKey(), enc);
-		//File b = new File("asdasdasdsa.txt");
 		File b = new File("3.jpg");
 		File encryptedFile = cr.encryptFile(b);
 		System.out.println(encryptedFile.getName());
 		File c = cr.decryptFile(encryptedFile, "tmp");
 		System.out.println(c.getName());
-		//File a = cr.encryptFile(new File("textew.txt"));
 	}
+	
+	@Test
+	public void testEncryptDecrypt10Files() throws FileNotFoundException {
+		CryptUtil cr = new CryptUtil(keyServ.getDefaultKey(), enc);
+		for(int i = 1; i <= 10; i++) {
+			File b = new File(i + ".jpg");
+			File encryptedFile = cr.encryptFile(b);
+			File c = cr.decryptFile(encryptedFile, "tmp");
+			System.out.println(c.getName());
+		}
+	}
+	
 
+	@Test
+	public void testEncryptDecryptName() {
+		for(int i = 0; i < 100; i++) {
+			String name = i + ".jpg";
+			String encryptedName = enc.encrypt(name, keyServ.getDefaultKey());
+			System.out.println("ENCRYPTED: " + encryptedName);
+		}		
+	}
 }

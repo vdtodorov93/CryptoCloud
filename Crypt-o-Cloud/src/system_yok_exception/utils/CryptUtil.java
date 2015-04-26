@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import javax.crypto.CipherInputStream;
 
@@ -32,7 +33,7 @@ public class CryptUtil {
 		try {
 			byte[] fileBytes = Files.readAllBytes(file.toPath());
 			byte[] cipheredFile = encryptor.encrypt(fileBytes, key);
-			String encryptedFileName = encryptor.encrypt(file.getName(), key);
+			String encryptedFileName = encodeFileName(encryptor.encrypt(file.getName(), key));
 			
 			FileOutputStream fos = new FileOutputStream("tmp/" + encryptedFileName, true);
 			fos.write(cipheredFile);
@@ -51,7 +52,7 @@ public class CryptUtil {
 			byte[] fileBytes = Files.readAllBytes(file.toPath());
 			byte[] decryptedFile = encryptor.decrypt(fileBytes, key);
 			String originalName = file.getName();
-			String decryptedName = encryptor.decrypt(originalName, key);
+			String decryptedName = decodeFileName(encryptor.decrypt(originalName, key));
 			
 			FileOutputStream fos = new FileOutputStream("tmp/" + decryptedName, true);
 			fos.write(decryptedFile);
@@ -62,5 +63,14 @@ public class CryptUtil {
 			System.out.println(e);
 		}
 		return targetFile;
+	}
+	
+	//TODO: Maybe make this a bit more civilized later
+	public String encodeFileName(String filename) {
+		return filename.replace('/', '%').replace('\\', '$');
+	}
+	
+	public String decodeFileName(String encodedFilename) {
+		return encodedFilename.replace('%', '/').replace('$', '\\');
 	}
 }
