@@ -67,18 +67,19 @@ public class DropboxManager implements ICloudManager {
 
 		} catch (DbxException.InvalidAccessToken e) {
 			authenticate();
+			client = new DbxClient(config, accessToken);
 		} catch (FileNotFoundException e) {
 			authenticate();
+			client = new DbxClient(config, accessToken);
 		} catch (NoSuchFileException e) {
 			authenticate();
+			client = new DbxClient(config, accessToken);
 		}
 
 	}
 
 	private void authenticate() throws IOException, DbxException {
 		DbxAppInfo appInfo = new DbxAppInfo(APP_KEY, APP_SECRET);
-
-		// TODO: what is this for?
 
 		DbxWebAuthNoRedirect webAuth = new DbxWebAuthNoRedirect(config, appInfo);
 
@@ -99,7 +100,6 @@ public class DropboxManager implements ICloudManager {
 						try {
 							Desktop.getDesktop().browse(e.getURL().toURI());
 						} catch (IOException | URISyntaxException e1) {
-							// TODO Auto-generated catch block
 							e1.printStackTrace();
 						}
 					}
@@ -109,11 +109,6 @@ public class DropboxManager implements ICloudManager {
 
 		String code = JOptionPane.showInputDialog(null, editor,
 				"Connect to Dropbox", JOptionPane.QUESTION_MESSAGE);
-
-		// String code = new BufferedReader(new
-		// InputStreamReader(System.in)).readLine().trim();
-
-		// TODO: Make user input go away!
 
 		DbxAuthFinish authFinish = webAuth.finish(code);
 		accessToken = authFinish.accessToken;
@@ -147,7 +142,6 @@ public class DropboxManager implements ICloudManager {
 
 					DbxEntry.Folder folder = new DbxEntry.Folder(destinationPath, null, true);
 					
-					//TODO: Exceptions
 					for (File node : children) {
 
 							uploadResource(node, destinationPath + "/" + sourceFile.getName());
@@ -162,33 +156,34 @@ public class DropboxManager implements ICloudManager {
 	@Override
 	public File downloadResource(String resName, File downloadedRes)
 			throws DbxException, IOException {
+		
+		return downloadResourceExecute(resName, new File(downloadedRes.getPath().toString() + "/" 
+		+ resName.substring(resName.lastIndexOf("/"))));
+	}
 
+	private File downloadResourceExecute(String resName, File downloadedRes) throws DbxException, IOException
+	{
+		DbxEntry metadata = client.getMetadata(resName);
 		
-		WithChildren listing = client.getMetadataWithChildren(resName);
-		
-		
-		
-		//DbxEntry.Folder node = new DbxEntry.Folder(resName, null, true);
-		
-		if(listing != null)
+		if(metadata.isFile()) 
 		{
-			(new File(resName)).mkdirs();
-			FileOutputStream outputStream = new FileOutputStream(downloadedRes + resName.substring(resName.lastIndexOf('/')));
+			(downloadedRes.getParentFile()).mkdirs();
+			FileOutputStream outputStream = new FileOutputStream(downloadedRes);
 			client.getFile(resName, null, outputStream);
 		}
 		else
 		{
-			ArrayList<Pair<String, String>> folderContents = listDir(resName);
+ 			ArrayList<Pair<String, String>> folderContents = listDir(resName);
 			
 			for(Pair<String, String> nodeInfo : folderContents)
 			{
-				downloadResource(resName + nodeInfo.getFirst(),
-						new File(downloadedRes.getName() + nodeInfo.getFirst()));
+				downloadResourceExecute(resName + "/" + nodeInfo.getFirst(),
+						new File(downloadedRes.getPath().toString() + "/" + nodeInfo.getFirst()));
 			}
 		}
 		return downloadedRes;
 	}
-
+	
 	@Override
 	public ArrayList<Pair<String, String>> listDir(String dirPath)
 			throws DbxException {
