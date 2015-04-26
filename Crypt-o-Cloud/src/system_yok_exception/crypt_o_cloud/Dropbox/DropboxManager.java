@@ -142,24 +142,17 @@ public class DropboxManager implements ICloudManager {
 			}
 		} else {
 			
-			new Thread(){
-				
-			    public void run(){
+
 			      File[] children = sourceFile.listFiles();
 
 					DbxEntry.Folder folder = new DbxEntry.Folder(destinationPath, null, true);
 					
 					//TODO: Exceptions
 					for (File node : children) {
-						try {
+
 							uploadResource(node, destinationPath + "/" + sourceFile.getName());
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
 					}
-			    }
-			  }.start();
+
 			
 		}
 
@@ -170,16 +163,23 @@ public class DropboxManager implements ICloudManager {
 	public File downloadResource(String resName, File downloadedRes)
 			throws DbxException, IOException {
 
-		//ArrayList<Pair<String, String>> folderContents = listDir(resname);
+		DbxEntry.Folder node = new DbxEntry.Folder(resName, null, true);
 		
-		//if()
+		if(node.isFile())
 		{
+			(new File(resName)).mkdirs();
 			FileOutputStream outputStream = new FileOutputStream(downloadedRes);
 			client.getFile(resName, null, outputStream);
 		}
-		//else
+		else
 		{
+			ArrayList<Pair<String, String>> folderContents = listDir(resName);
 			
+			for(Pair<String, String> nodeInfo : folderContents)
+			{
+				downloadResource(resName + nodeInfo.getFirst(),
+						new File(downloadedRes.getName() + nodeInfo.getFirst()));
+			}
 		}
 		return downloadedRes;
 	}
