@@ -7,6 +7,10 @@ import java.util.Stack;
 import javax.swing.ImageIcon;
 import javax.swing.table.AbstractTableModel;
 
+import system_yok_exception.utils.Aes256Encryptor;
+import system_yok_exception.utils.CryptUtil;
+import system_yok_exception.utils.FileKeyService;
+
 public class CloudFileBrowser extends AbstractTableModel {
 	private static final long serialVersionUID = 1L;
 
@@ -16,7 +20,7 @@ public class CloudFileBrowser extends AbstractTableModel {
 
 	private ICloudManager cloudManager;
 	private String currentPath;
-	private String[] columns = { "Icon", "File" };
+	private String[] columns = { "", "File" };
 
 	public void loadRoot(ICloudManager cloudManager) throws Exception {
 		this.cloudManager = cloudManager;
@@ -45,9 +49,11 @@ public class CloudFileBrowser extends AbstractTableModel {
 		case 0:
 			return previous.isEmpty() ? loadFolderFileIcon(files.get(row))
 					: loadFolderFileIcon(files.get(row - 1));
-		case 1:
-			return previous.isEmpty() ? files.get(row).getFirst() : files.get(
+		case 1: {
+			String gx = previous.isEmpty() ? files.get(row).getFirst() : files.get(
 					row - 1).getFirst();
+			return new Aes256Encryptor().decrypt(gx, new FileKeyService().getDefaultKey());
+			}
 		}
 		return "";
 	}
@@ -82,11 +88,13 @@ public class CloudFileBrowser extends AbstractTableModel {
 			setFiles(previous.pop());
 			currentPath = currentPath
 					.substring(0, currentPath.lastIndexOf('/'));
+			selectedFile = null;
 		} else if (files.get(previous.isEmpty() ? row : --row).getSecond()
 				.equals(ICloudManager.TYPE_FOLDER)) {
 			previous.push(files);
 			currentPath += "/" + files.get(row).getFirst();
 			setFiles(cloudManager.listDir(currentPath));
+			selectedFile = null;
 		}
 	}
 

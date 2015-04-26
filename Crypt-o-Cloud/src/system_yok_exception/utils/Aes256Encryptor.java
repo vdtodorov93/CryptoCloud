@@ -1,9 +1,14 @@
 package system_yok_exception.utils;
 
 import java.security.Key;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+
+//import org.apache.commons.codec.binary.Base64;
+
+
 import sun.misc.*;
 
 public class Aes256Encryptor implements IEncryptor {
@@ -46,9 +51,19 @@ public class Aes256Encryptor implements IEncryptor {
 		try {
 			c = Cipher.getInstance(algName);
 	        c.init(Cipher.ENCRYPT_MODE, key);
+//	        byte[] encrypted = c.doFinal(Data.getBytes("UTF-8"));
+//	        String result = new String(Base64.getEncoder().encodeToString(encrypted));
+//	        return result;
+	        
 	        byte[] encVal = c.doFinal(Data.getBytes());
 	        String encryptedValue = new BASE64Encoder().encode(encVal);
 	        return encryptedValue;
+//	        byte[] bytes = Data.getBytes();
+//	        byte[] encodedBytes = new Base64().encode(bytes);
+//	        byte[] encVal = c.doFinal(encodedBytes);
+	        //String encryptedValue = new BASE64Encoder().encode(encVal);
+//	        String result = new String(encVal, "UTF-8");
+//	        return result;
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -60,11 +75,21 @@ public class Aes256Encryptor implements IEncryptor {
         Cipher c;
 		try {
 			c = Cipher.getInstance(algName);
-	        c.init(Cipher.DECRYPT_MODE, key);
+			c.init(Cipher.DECRYPT_MODE, key);
+//			byte[] encrypted = Base64.getDecoder().decode(encryptedData);
+//			String decrypted = new String(c.doFinal(encrypted), "UTF-8");
+//			return decrypted;
+//			
 	        byte[] decordedValue = new BASE64Decoder().decodeBuffer(encryptedData);
 	        byte[] decValue = c.doFinal(decordedValue);
 	        String decryptedValue = new String(decValue);
 	        return decryptedValue;
+	        
+//	        byte[] encryptedBase64 = encryptedData.getBytes();
+//	        byte[] encrypted = new Base64().decode(encryptedBase64);
+//	        byte[] decValue = c.doFinal(encrypted);
+//	        String result = new String(decValue, "UTF-8");
+//	        return result;
 		} catch (Exception e) {
 			System.out.println(e);
 		}

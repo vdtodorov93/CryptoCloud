@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="lib/jackson-core-2.2.4.jar"/>
 	<classpathentry kind="lib" path="lib/bcpkix-jdk15on-152.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.10.jar"/>
+	<classpathentry kind="lib" path="lib/miglayout-4.0-swing.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

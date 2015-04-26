@@ -8,9 +8,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
-import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -19,8 +20,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
+import net.miginfocom.swing.MigLayout;
 import system_yok_exception.crypt_o_cloud.Dropbox.DropboxManager;
+import system_yok_exception.utils.Aes256Encryptor;
+import system_yok_exception.utils.CryptUtil;
+import system_yok_exception.utils.FileKeyService;
 
 public class UserInterface {
 	private static final String ACCOUNTS_FILE_NAME = "accounts.csv";
@@ -29,7 +36,7 @@ public class UserInterface {
 
 	private final CloudFileBrowser cloudBrowser = new CloudFileBrowser();
 	private final LocalFileBrowser localBrowser = new LocalFileBrowser();
-
+	private CryptUtil cryptUtil = new CryptUtil(new FileKeyService().getDefaultKey(), new Aes256Encryptor());
 	private Account[] readAccountsFromCsvFile() {
 		Account noAccount = new Account("-- No Logged Account --", null);
 		try {
@@ -50,10 +57,10 @@ public class UserInterface {
 	private void createUpperPanel(JPanel panel) {
 		JPanel upperPanel = new JPanel();
 		upperPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-		upperPanel.setLayout(new BoxLayout(upperPanel, BoxLayout.Y_AXIS));
+		upperPanel.setLayout(new MigLayout());
 
 		JPanel userInfoPanel = new JPanel();
-		userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.X_AXIS));
+		userInfoPanel.setLayout(new MigLayout());
 
 		JLabel accountNameLabel = new JLabel("Account:");
 		userInfoPanel.add(accountNameLabel);
@@ -72,20 +79,28 @@ public class UserInterface {
 		userInfoPanel.add(addNewAccount);
 
 		JPanel uploadDownloadPanel = new JPanel();
-		uploadDownloadPanel.setLayout(new BoxLayout(uploadDownloadPanel,
-				BoxLayout.X_AXIS));
+		uploadDownloadPanel.setLayout(new MigLayout());
 
 		upperPanel.add(userInfoPanel);
 		upperPanel.add(uploadDownloadPanel);
 
-		panel.add(upperPanel);
+		panel.add(upperPanel, "center");
 	}
 
 	private void createLowerPanelFolderStructure(JPanel panel) {
 		JPanel lowerPanel = new JPanel();
-		lowerPanel.setLayout(new BoxLayout(lowerPanel, BoxLayout.X_AXIS));
+		lowerPanel.setLayout(new MigLayout());
 
 		JTable localTable = new JTable(localBrowser);
+
+		localTable.setShowGrid(false);
+		localTable.getColumnModel().getColumn(0).setMinWidth(20);
+		localTable.getColumnModel().getColumn(0).setMaxWidth(20);
+		localTable.getColumnModel().getColumn(2).setMinWidth(100);
+		localTable.getColumnModel().getColumn(2).setMaxWidth(100);
+		localTable.getColumnModel().getColumn(3).setMinWidth(80);
+		localTable.getColumnModel().getColumn(3).setMaxWidth(80);
+
 		localTable.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -102,6 +117,9 @@ public class UserInterface {
 
 		try {
 			JTable cloudTable = new JTable(cloudBrowser);
+			cloudTable.setShowGrid(false);
+			cloudTable.getColumnModel().getColumn(0).setMinWidth(20);
+			cloudTable.getColumnModel().getColumn(0).setMaxWidth(20);
 			cloudTable.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mousePressed(MouseEvent e) {
@@ -128,7 +146,7 @@ public class UserInterface {
 			lowerPanel.add(scrollLocal);
 
 			JPanel buttonPanel = new JPanel();
-			buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+			buttonPanel.setLayout(new MigLayout("flowy"));
 
 			JButton uploadButton = new JButton(">");
 			uploadButton.addActionListener(new ActionListener() {
@@ -172,31 +190,68 @@ public class UserInterface {
 	}
 
 	private void onDownload() {
-		if (cloudManager == null || cloudBrowser.getSelectedFile() == null)
+		if (cloudManager == null) {
+			JOptionPane.showMessageDialog(null,
+					"Please, select account first!", "Not selected account",
+					JOptionPane.WARNING_MESSAGE);
 			return;
+		}
+		if (cloudBrowser.getSelectedFile() == null) {
+			JOptionPane.showMessageDialog(null,
+					"Please, select item to be downloaded first!",
+					"Not selected item for download",
+					JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
 		try {
-			cloudManager.downloadResource(cloudBrowser.getCurrentPath() + "/"
+			
+			
+			File downloadedCryptedDir = cloudManager.downloadResource(cloudBrowser.getCurrentPath() + "/"
 					+ cloudBrowser.getSelectedFile().getFirst(),
-					localBrowser.getCurrentFolder());
+					new File("tmp"));
+			cryptUtil.decryptDirectory(downloadedCryptedDir, localBrowser.getCurrentFolder().getPath());
 			localBrowser.updateCurrent();
+			emptyTmpFolder();
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null,
-					"Problem when downloading resours", "Download Error",
+					"Problem when downloading resource", "Download Error",
 					JOptionPane.ERROR_MESSAGE);
 			e.printStackTrace();
 		}
 	}
 
+	private void emptyTmpFolder() {
+		File tmp = new File("tmp");
+		for(File f: tmp.listFiles()) {
+			deleteDirectory(f);
+		}
+	}
+
 	private void onUpload() {
-		if (cloudManager == null || localBrowser.getSelectedFile() == null)
+		if (cloudManager == null) {
+			JOptionPane.showMessageDialog(null,
+					"Please, select account first!", "Not selected account",
+					JOptionPane.WARNING_MESSAGE);
 			return;
+		}
+		if (localBrowser.getSelectedFile() == null) {
+			JOptionPane
+					.showMessageDialog(null,
+							"Please, select item to be uploaded first!",
+							"Not selected item for upload",
+							JOptionPane.WARNING_MESSAGE);
+			return;
+		}
 		try {
-			cloudManager.uploadResource(localBrowser.getSelectedFile(),
+			File encryptedFile = cryptUtil.encryptDirectory(localBrowser.getSelectedFile(), "tmp");
+			cloudManager.uploadResource(encryptedFile,
 					cloudBrowser.getCurrentPath());
 			cloudBrowser.updateCurrent();
+			emptyTmpFolder();
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null,
-					"Problem when uploading resours", "Upload Error",
+					"Problem when uploading resource", "Upload Error",
 					JOptionPane.ERROR_MESSAGE);
 			e.printStackTrace();
 		}
@@ -204,7 +259,7 @@ public class UserInterface {
 
 	private JPanel getJPanel() {
 		JPanel panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+		panel.setLayout(new MigLayout("flowy"));
 		createUpperPanel(panel);
 		createLowerPanelFolderStructure(panel);
 		return panel;
@@ -213,6 +268,7 @@ public class UserInterface {
 	private static void createAndShowGUI() {
 		JFrame frame = new JFrame("Crypt-o-Cloud");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setIconImage(new ImageIcon("icons/icon.png").getImage());
 
 		frame.add(new UserInterface().getJPanel());
 
@@ -222,7 +278,32 @@ public class UserInterface {
 	}
 
 	public static void main(String args[]) {
+		try {
+			UIManager.setLookAndFeel(UIManager
+					.getCrossPlatformLookAndFeelClassName());
+		} catch (ClassNotFoundException | InstantiationException
+				| IllegalAccessException | UnsupportedLookAndFeelException e) {
+			e.printStackTrace();
+		}
+
 		createAndShowGUI();
 		// TODO Запаметяването на акаунтите при изход
+	}
+	
+	public static boolean deleteDirectory(File directory) {
+	    if(directory.exists()){
+	        File[] files = directory.listFiles();
+	        if(null!=files){
+	            for(int i=0; i<files.length; i++) {
+	                if(files[i].isDirectory()) {
+	                    deleteDirectory(files[i]);
+	                }
+	                else {
+	                    files[i].delete();
+	                }
+	            }
+	        }
+	    }
+	    return(directory.delete());
 	}
 }

@@ -1,10 +1,12 @@
 package system_yok_exception.crypt_o_cloud;
 
 import java.io.File;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Stack;
 
 import javax.swing.ImageIcon;
@@ -20,7 +22,7 @@ class LocalFileBrowser extends AbstractTableModel {
 	private Stack<File> previousFolders = new Stack<>();
 
 	private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
-	private String[] columns = { "Icon", "File", "Path/name", "Size",
+	private String[] columns = { "", "File", "Size",
 			"Last Modified" };
 
 	public LocalFileBrowser() {
@@ -53,10 +55,9 @@ class LocalFileBrowser extends AbstractTableModel {
 		case 1:
 			return fileSystemView.getSystemDisplayName(file);
 		case 2:
-			return file.getPath();
+			return NumberFormat.getNumberInstance(Locale.US).format(
+				     file.length());
 		case 3:
-			return file.length();
-		case 4:
 			return file.lastModified();
 		}
 		return "";
@@ -99,11 +100,13 @@ class LocalFileBrowser extends AbstractTableModel {
 		if (!previous.isEmpty() && row == 0) {
 			setFiles(previous.pop());
 			previousFolders.pop();
+			selectedFile = null;
 		} else if (files.get(previous.isEmpty() ? row : --row).isDirectory()) {
 			previous.push(files);
 			previousFolders.push(files.get(row));
 			setFiles(Arrays
 					.asList(fileSystemView.getFiles(files.get(row), true)));
+			selectedFile = null;
 		}
 	}
 
