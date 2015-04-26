@@ -18,8 +18,6 @@ import java.util.List;
 import javax.crypto.CipherInputStream;
 
 public class CryptUtil {
-	private static final String temporateFolder = "tmp";
-	
 	private byte[] key;
 	IEncryptor encryptor;
 	
@@ -28,18 +26,18 @@ public class CryptUtil {
 		this.encryptor = enc;
 	}
 
-	public File encryptFile(File file) throws FileNotFoundException {
+	public File encryptFile(File file, String pathTo) throws FileNotFoundException {
 		File targetFile = null;
 		try {
 			byte[] fileBytes = Files.readAllBytes(file.toPath());
 			byte[] cipheredFile = encryptor.encrypt(fileBytes, key);
 			String encryptedFileName = encodeFileName(encryptor.encrypt(file.getName(), key));
-			
-			FileOutputStream fos = new FileOutputStream("tmp/" + encryptedFileName, true);
+			String targetDestination = Paths.get(pathTo, encryptedFileName).toString();
+			FileOutputStream fos = new FileOutputStream(targetDestination, true);
 			fos.write(cipheredFile);
 			fos.flush();
 			fos.close();
-			targetFile = new File("tmp/" + encryptedFileName);
+			targetFile = new File(pathTo, encryptedFileName);
 		} catch (IOException e) {
 			System.out.println(e);
 		}
@@ -53,16 +51,51 @@ public class CryptUtil {
 			byte[] decryptedFile = encryptor.decrypt(fileBytes, key);
 			String originalName = file.getName();
 			String decryptedName = decodeFileName(encryptor.decrypt(originalName, key));
-			
-			FileOutputStream fos = new FileOutputStream("tmp/" + decryptedName, true);
+			String finalDestination = Paths.get(dest, decryptedName).toString();
+			//You get it? Final Destination ha-ha
+			FileOutputStream fos = new FileOutputStream(finalDestination, true);
 			fos.write(decryptedFile);
 			fos.flush();
 			fos.close();
-			targetFile = new File("tmp/" + decryptedName);
+			targetFile = new File(finalDestination);
 		} catch (IOException e) {
 			System.out.println(e);
 		}
 		return targetFile;
+	}
+	
+	public File encryptDirectory(File file) throws FileNotFoundException {
+		return encryptDirectory(file, "tmp");
+	}
+	
+	public File encryptDirectory(File dir, String path) throws FileNotFoundException {
+		if(dir.isFile()) {
+			return encryptFile(dir, path);
+		}
+		else {
+			String encryptedFileName = encryptor.encrypt(dir.getName(), key);
+			File encryptedDirectory = new File(Paths.get(path, encryptedFileName).toString());
+			encryptedDirectory.mkdirs();
+			for(File f: dir.listFiles()) {
+				encryptDirectory(f, encryptedDirectory.toString());
+			}
+			return encryptedDirectory;
+		}
+	}
+	
+	public File decryptDirectory(File dir, String path) {
+		if(dir.isFile()) {
+			return decryptFile(dir, path);
+		}
+		else {
+			String decryptedFileName = encryptor.decrypt(dir.getName(), key);
+			File decryptedDirectory = new File(Paths.get(path, decryptedFileName).toString());
+			decryptedDirectory.mkdirs();
+			for(File f: dir.listFiles()) {
+				decryptDirectory(f, decryptedDirectory.toString());
+			}
+			return decryptedDirectory;
+		}
 	}
 	
 	//TODO: Maybe make this a bit more civilized later

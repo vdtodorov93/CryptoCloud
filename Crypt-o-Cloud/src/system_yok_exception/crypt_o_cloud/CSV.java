@@ -2,6 +2,7 @@ package system_yok_exception.crypt_o_cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ public class CSV {
 		if (!file.getName().endsWith(".csv"))
 			throw new IOException("Wrong type of file: must be .csv");
 		List<List<String>> readed = new ArrayList<>();
-		for (String line : Files.readAllLines(Paths.get(file.getPath()))) {
+		for (String line : Files.readAllLines(Paths.get(file.getPath()), StandardCharsets.UTF_8)) {
 			List<String> row = new ArrayList<>();
 			boolean openQuotes = false;
 			StringBuilder col = new StringBuilder();
